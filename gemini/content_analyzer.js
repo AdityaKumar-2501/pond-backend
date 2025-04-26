@@ -132,9 +132,9 @@ function getMimeType(filePath) {
       return "video/mp4";
     case "txt":
       return "text/plain";
-    case "js": // Added JavaScript file type
+    case "js":
       return "text/javascript";
-    case "md": // Added Markdown file type
+    case "md":
       return "text/markdown";
     case "html":
       return "text/html";
