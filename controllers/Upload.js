@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { Image, User } from '../models/User.db.js';
+import { analyzeContent } from '../gemini/content_analyzer.js';
 
 async function storeImageInfo(userId, uploadResult){
 
@@ -43,11 +44,18 @@ async function handleUploadImage(req, res) {
     console.log(req.file);
 
     try {
-        const folderName = `users/${userId}`; 
+        // First analyze the content with Gemini
+        const { tags, description } = await analyzeContent(req.file.path);
+        
+        const folderName = `users/${userId}`;
     
         const uploadResult = await cloudinary.uploader.upload(req.file.path, {
           folder: folderName,
         });
+
+        // Add Gemini-generated tags and description to upload result
+        uploadResult.tags = tags;
+        uploadResult.description = description;
         
         // Store image info in the database
         const result = await storeImageInfo(userId, uploadResult);

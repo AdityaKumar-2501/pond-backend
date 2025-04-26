@@ -5,6 +5,7 @@ import { signupUser, loginUser, getUsers } from "../controllers/User.js";
 
 import verifyToken from "../middlewares/verifyToken.js";
 import { handleUploadImage } from "../controllers/Upload.js";
+import { testUpload, upload as testUploadMiddleware } from "../controllers/TestUpload.js";
 import { upload } from "../middlewares/multer.js";
 import { MulterError } from "multer";
 
@@ -37,5 +38,8 @@ router.post(
 );
 
 router.get("/users", verifyToken, getUsers);
+
+// Test route for content analysis (no auth required)
+router.post("/test-upload", testUploadMiddleware.single('file'), testUpload);
 
 export default router;

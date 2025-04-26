@@ -7,7 +7,7 @@ import db from "./config/db.js";
 
 // App Config
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // DB Config
 db(process.env.MONGO_URI);

@@ -7,6 +7,7 @@ import * as fs from "node:fs";
 import * as dotenv from "dotenv";
 dotenv.config();
 
+
 const apiKey = process.env.GEMINI_API_KEY; // Ensure you have set the environment variable
 const modelName = "gemini-2.0-flash";
 
@@ -146,31 +147,4 @@ function getMimeType(filePath) {
   }
 }
 
-function extractTags(responseText) {
-  // Implement logic to extract tags from the response text
-  // This might involve using regular expressions or other parsing techniques
-  // Example: splitting the response by commas
-  return [];
-}
-
-function extractDescription(responseText) {
-  // Implement logic to extract the description from the response text
-  // This might involve using regular expressions or other parsing techniques
-  // Example: taking the first sentence of the response
-  return responseText;
-}
-
-// Example usage (for testing):
-async function main() {
-  const filePath = process.argv[2]; // Get file path from command line arguments
-  if (!filePath) {
-    console.error("Please provide a file path as a command line argument.");
-    return;
-  }
-
-  const { tags, description } = await analyzeContent(filePath);
-  console.log("Tags:", tags);
-  console.log("Description:", description);
-}
-
-main();
+export { analyzeContent };
