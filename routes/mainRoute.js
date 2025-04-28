@@ -7,7 +7,8 @@ import verifyToken from "../middlewares/verifyToken.js";
 import {
   handleUploadImage,
   handleAnalyzeImage,
-  getUserImages
+  getUserImages,
+  deleteImage
 } from "../controllers/Upload.js";
 import {
   testUpload,
@@ -37,6 +38,7 @@ router.post("/login", loginUser);
 
 router.post("/upload", verifyToken, uploadMiddleware, handleUploadImage);
 router.get("/images", verifyToken, getUserImages);
+router.delete("/images/:imageId", verifyToken, deleteImage);
 
 router.get("/users", verifyToken, getUsers);
 

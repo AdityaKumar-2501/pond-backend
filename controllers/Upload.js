@@ -153,6 +153,69 @@ async function handleUploadImage(req, res) {
   }
 }
 
+async function getCloudinaryPublicId(url) {
+  // Extract the public_id from cloudinary URL
+  // Format: https://res.cloudinary.com/{cloud_name}/image/upload/v{version}/{public_id}.{extension}
+  const matches = url.match(/\/v\d+\/(.+?)\./);
+  return matches ? matches[1] : null;
+}
+
+async function deleteImage(req, res) {
+  const userId = req.user.id;
+  const { imageId } = req.params;
+
+  try {
+    // Find the image
+    const image = await Image.findById(imageId);
+    
+    if (!image) {
+      return res.status(404).json({
+        success: false,
+        message: "Image not found"
+      });
+    }
+
+    // Check if user owns this image
+    if (image.author.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to delete this image"
+      });
+    }
+
+    // Get Cloudinary public_id from the URL
+    const publicId = getCloudinaryPublicId(image.url);
+    if (!publicId) {
+      return res.status(500).json({
+        success: false,
+        message: "Could not parse Cloudinary URL"
+      });
+    }
+
+    // Delete from Cloudinary
+    await cloudinary.uploader.destroy(publicId);
+
+    // Remove image reference from user
+    await User.findByIdAndUpdate(userId, {
+      $pull: { images: imageId }
+    });
+
+    // Delete from MongoDB
+    await Image.findByIdAndDelete(imageId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Image deleted successfully"
+    });
+  } catch (error) {
+    console.error("Error deleting image:", error);
+    return res.status(500).json({
+      success: false,
+      message: `Error occurred: ${error.message}`
+    });
+  }
+}
+
 async function getUserImages(req, res) {
   const userId = req.user.id;
 
@@ -186,4 +249,4 @@ async function getUserImages(req, res) {
   }
 }
 
-export { handleUploadImage, handleAnalyzeImage, getUserImages };
+export { handleUploadImage, handleAnalyzeImage, getUserImages, deleteImage };
