@@ -7,8 +7,7 @@ import * as fs from "node:fs";
 import * as dotenv from "dotenv";
 dotenv.config();
 
-
-const apiKey = process.env.GEMINI_API_KEY; // Ensure you have set the environment variable
+const apiKey = process.env.GEMINI_API_KEY;
 const modelName = "gemini-2.0-flash";
 
 const config = {
@@ -34,63 +33,90 @@ const config = {
   },
 };
 
-async function analyzeContent(filePath) {
+async function analyzeContent(imageSource) {
   try {
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY is not set in the environment.");
     }
 
     const ai = new GoogleGenAI({ apiKey });
-
-    const mimeType = getMimeType(filePath);
-    console.log(`Analyzing ${filePath} with mime type ${mimeType}`);
-
     let contents = [];
-
-    if (mimeType.startsWith("image/")) {
-      const base64ImageData = await fs.promises.readFile(filePath, {
-        encoding: "base64",
-      });
-      contents = [
-        {
-          inlineData: {
-            mimeType: mimeType,
-            data: base64ImageData,
-          },
-        },
-        { text: "Describe this image." },
-      ];
-    } else if (mimeType.startsWith("video/")) {
-      const files = [await ai.files.upload({ file: filePath })];
-
-      contents = [
-        {
-          text: "Describe this video.",
-          parts: [
-            {
-              fileData: {
-                fileUri: files[0].uri,
-                mimeType: files[0].mimeType,
-              },
+    
+    if (imageSource.startsWith('http')) {
+      console.log('Analyzing image from URL:', imageSource);
+      try {
+        // Fetch the image data from URL
+        const response = await fetch(imageSource);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.statusText}`);
+        }
+        
+        const buffer = await response.arrayBuffer();
+        const base64Data = Buffer.from(buffer).toString('base64');
+        
+        contents = [
+          {
+            inlineData: {
+              mimeType: 'image/jpeg',
+              data: base64Data,
             },
-          ],
-        },
-      ];
-    } else if (mimeType.startsWith("text/")) {
-      const textData = await fs.promises.readFile(filePath, {
-        encoding: "utf-8",
-      });
-
-      contents = [
-        {
-          text: `Describe this ${mimeType} file: ${textData.replace(
-            /\n/g,
-            "\\n"
-          )}. Return Array<string> tags and a description.`,
-        },
-      ];
+          },
+          { text: "Describe this image and generate relevant tags." },
+        ];
+        
+        console.log('Image data prepared for analysis');
+      } catch (error) {
+        console.error('Error preparing image for analysis:', error);
+        throw error;
+      }
     } else {
-      throw new Error(`Unsupported file type: ${mimeType}`);
+      // Handle local file path
+      const mimeType = getMimeType(imageSource);
+      console.log(`Analyzing ${imageSource} with mime type ${mimeType}`);
+
+      if (mimeType.startsWith("image/")) {
+        const base64ImageData = await fs.promises.readFile(imageSource, {
+          encoding: "base64",
+        });
+        contents = [
+          {
+            inlineData: {
+              mimeType: mimeType,
+              data: base64ImageData,
+            },
+          },
+          { text: "Describe this image." },
+        ];
+      } else if (mimeType.startsWith("video/")) {
+        const files = [await ai.files.upload({ file: imageSource })];
+        contents = [
+          {
+            text: "Describe this video.",
+            parts: [
+              {
+                fileData: {
+                  fileUri: files[0].uri,
+                  mimeType: files[0].mimeType,
+                },
+              },
+            ],
+          },
+        ];
+      } else if (mimeType.startsWith("text/")) {
+        const textData = await fs.promises.readFile(imageSource, {
+          encoding: "utf-8",
+        });
+        contents = [
+          {
+            text: `Describe this ${mimeType} file: ${textData.replace(
+              /\n/g,
+              "\\n"
+            )}. Return Array<string> tags and a description.`,
+          },
+        ];
+      } else {
+        throw new Error(`Unsupported file type: ${mimeType}`);
+      }
     }
 
     const result = await ai.models.generateContent({
@@ -115,7 +141,7 @@ async function analyzeContent(filePath) {
 
     return { tags, description };
   } catch (error) {
-    console.error(`Error analyzing ${filePath}:`, error);
+    console.error(`Error analyzing ${imageSource}:`, error);
     return { tags: [], description: "Failed to generate description." };
   }
 }
@@ -143,7 +169,7 @@ function getMimeType(filePath) {
     case "gif":
       return "image/gif";
     default:
-      return "application/octet-stream"; // generic binary type
+      return "application/octet-stream";
   }
 }
 
