@@ -117,6 +117,14 @@ async function handleUploadImage(req, res) {
     // Delete the temporary file
     fs.unlinkSync(req.file.path);
 
+    // Analyze the image with Gemini
+    const { tags, description } = await analyzeContent(uploadResult.secure_url);
+    console.log("Analysis result:", { tags, description });
+
+    // Add analysis results to uploadResult
+    uploadResult.tags = tags;
+    uploadResult.description = description;
+
     // Store image info in the database
     const result = await storeImageInfo(userId, uploadResult);
 
@@ -126,7 +134,7 @@ async function handleUploadImage(req, res) {
 
     return res.status(200).json({
       success: true,
-      message: "Uploaded!",
+      message: "Uploaded and analyzed!",
       image: result.image,
     });
   } catch (error) {
@@ -145,4 +153,37 @@ async function handleUploadImage(req, res) {
   }
 }
 
-export { handleUploadImage, handleAnalyzeImage };
+async function getUserImages(req, res) {
+  const userId = req.user.id;
+
+  try {
+    // Find user and populate their images
+    const user = await User.findById(userId).populate('images');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      images: user.images.map(img => ({
+        _id: img._id,
+        url: img.url,
+        description: img.description || '',
+        tags: img.tags || [],
+        createdAt: img.createdAt,
+      }))
+    });
+  } catch (error) {
+    console.error("Error fetching user images:", error);
+    return res.status(500).json({
+      success: false,
+      message: `Error occurred: ${error.message}`
+    });
+  }
+}
+
+export { handleUploadImage, handleAnalyzeImage, getUserImages };
