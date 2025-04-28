@@ -5,8 +5,8 @@ import { analyzeContent } from "../gemini/content_analyzer.js";
 
 // Configuration
 cloudinary.config({
-  cloud_name: "dezgrhc2p",
-  api_key: "212495682594112",
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
   api_secret: process.env.API_SECRET,
 });
 
