@@ -35,6 +35,10 @@ app.get("/", (req, res) => {
   res.send("Welcome to the backend of POND app");
 });
 
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ message: "Server is healthy!" });
+});
+
 // Parent route for all routes
 app.use("/api", routes);
 

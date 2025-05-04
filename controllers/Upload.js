@@ -230,12 +230,15 @@ async function getUserImages(req, res) {
       });
     }
 
+    console.log("User images:", user.images[0]);
+
     return res.status(200).json({
       success: true,
       images: user.images.map(img => ({
         _id: img._id,
         url: img.url,
-        description: img.description || '',
+        description: img?.description,
+        aditionalInfo: img?.aditionalInfo,
         tags: img.tags || [],
         createdAt: img.createdAt,
       }))
@@ -249,4 +252,61 @@ async function getUserImages(req, res) {
   }
 }
 
-export { handleUploadImage, handleAnalyzeImage, getUserImages, deleteImage };
+async function updateImageDescription(req, res) {
+  const userId = req.user.id;
+  const { imageId } = req.params;
+  const { userDescription } = req.body;
+
+  if (!userDescription) {
+    return res.status(400).json({
+      success: false,
+      message: "No description provided"
+    });
+  }
+
+  try {
+    // Find the image
+    const image = await Image.findById(imageId);
+    
+    if (!image) {
+      return res.status(404).json({
+        success: false,
+        message: "Image not found"
+      });
+    }
+
+    // Check if user owns this image
+    if (image.author.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this image"
+      });
+    }
+
+    // Update the aditionalInfo field
+    image.aditionalInfo = userDescription;
+    await image.save();
+    
+    // Return the updated image
+    return res.status(200).json({
+      success: true,
+      message: "Description updated successfully",
+      image: {
+        _id: image._id,
+        url: image.url,
+        description: image.description,
+        aditionalInfo: image.aditionalInfo,
+        tags: image.tags,
+        createdAt: image.createdAt
+      }
+    });
+  } catch (error) {
+    console.error("Error updating image description:", error);
+    return res.status(500).json({
+      success: false,
+      message: `Error occurred: ${error.message}`
+    });
+  }
+}
+
+export { handleUploadImage, handleAnalyzeImage, getUserImages, deleteImage, updateImageDescription };

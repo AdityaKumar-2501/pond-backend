@@ -8,7 +8,8 @@ import {
   handleUploadImage,
   handleAnalyzeImage,
   getUserImages,
-  deleteImage
+  deleteImage,
+  updateImageDescription
 } from "../controllers/Upload.js";
 import {
   testUpload,
@@ -39,6 +40,7 @@ router.post("/login", loginUser);
 router.post("/upload", verifyToken, uploadMiddleware, handleUploadImage);
 router.get("/images", verifyToken, getUserImages);
 router.delete("/images/:imageId", verifyToken, deleteImage);
+router.put("/images/:imageId/description", verifyToken, updateImageDescription);
 
 router.get("/users", verifyToken, getUsers);
 
